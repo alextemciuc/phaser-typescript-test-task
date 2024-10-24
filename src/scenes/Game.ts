@@ -1,4 +1,4 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene, GameObjects, Display } from 'phaser';
 
 enum ESymbols {
     BANANA = "banana",
@@ -25,6 +25,7 @@ export class Game extends Scene
     title: GameObjects.Text;
     spinButton: GameObjects.Image;
     reels: ESymbols[][];
+    reelsContainer: GameObjects.Container;
 
     constructor ()
     {
@@ -56,8 +57,12 @@ export class Game extends Scene
         this.spinButton.setInteractive({ cursor: "pointer" });
 
         this.reels = this.createReels();
-        const newReels = this.addSymbols(this.reels);
+        const newReels: GameObjects.Image[][] = this.addSymbols(this.reels);
         console.log(newReels);
+
+        this.reelsContainer = this.add.container();
+
+        this.createReelsMask(this.reelsContainer, newReels);
     }
 
     createReels() {
@@ -121,5 +126,15 @@ export class Game extends Scene
         const maxFloored: number = Math.floor(max);
 
         return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+    }
+
+    createReelsMask(container: GameObjects.Container, reels: GameObjects.Image[][]) {
+        for (let i: number = 0; i < reels.length; i++) {
+            container.add(reels[i]);
+        }
+
+        const maskRect: GameObjects.Rectangle = this.add.rectangle(this.background.x, this.background.y - 10, 570, 240, 0x000000).setVisible(false);
+        const mask: Display.Masks.BitmapMask = new Phaser.Display.Masks.BitmapMask(this, maskRect);
+        container.setMask(mask);
     }
 }
