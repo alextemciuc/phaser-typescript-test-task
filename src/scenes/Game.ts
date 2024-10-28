@@ -1,4 +1,4 @@
-import { Scene, GameObjects, Display } from 'phaser';
+import { Scene, GameObjects, Display, Tweens } from 'phaser';
 
 enum ESymbols {
     BANANA = "banana",
@@ -26,6 +26,7 @@ export class Game extends Scene
     spinButton: GameObjects.Image;
     reels: ESymbols[][];
     reelsContainer: GameObjects.Container;
+    reelsTweens: Tweens.Tween[] = new Array(reelsNumber);
 
     constructor ()
     {
@@ -43,6 +44,7 @@ export class Game extends Scene
 
     create ()
     {
+        this.reelsContainer = this.add.container();
         this.background = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'background');
         this.background.setScale(0.5);
 
@@ -60,21 +62,32 @@ export class Game extends Scene
         const newReels: GameObjects.Image[][] = this.addSymbols(this.reels);
         console.log(newReels);
 
-        this.reelsContainer = this.add.container();
-
         this.createReelsMask(this.reelsContainer, newReels);
+
+        this.spinButton.on('pointerdown', () => {
+            for (let i: number = 0; i < newReels.length; i++) {
+                this.time.delayedCall(i * 500, () => {
+                    this.reelsTweens[i] = this.createTween(newReels[i]);
+                    this.time.delayedCall(2000, () => {
+                        console.log(i);
+                        this.reelsTweens[i].pause();
+                    }, [], this);
+                    // this.stopSpin(this.reelsTweens[i]);
+                }, [], this);
+            }
+        });
     }
 
     createReels() {
         const reels: ESymbols[][] = new Array(reelsNumber)
         for (let i: number = 0; i < reels.length; i++) {
-            const reelDimension: number = this.getRandomReelDimension(minReelElements, maxReelElements);
+            const reelDimension: number = this.getRandomNumberBetween(minReelElements, maxReelElements);
             reels[i] = new Array(reelDimension);
         }
 
         for (let i: number = 0; i < reels.length; i++) {
             for (let j: number = 0; j < reels[i].length; j++) {
-                const randomInt = this.getRandomSymbolNumber(maxSymbols);
+                const randomInt = this.getRandomNumber(maxSymbols);
                 switch (randomInt) {
                     case 0:
                         reels[i][j] = ESymbols.BANANA;
@@ -117,11 +130,11 @@ export class Game extends Scene
         return newReels;
     }
 
-    getRandomSymbolNumber(max: number) {
+    getRandomNumber(max: number) {
         return Math.floor(Math.random() * max);
     }
 
-    getRandomReelDimension(min: number, max: number) {
+    getRandomNumberBetween(min: number, max: number) {
         const minCeiled: number = Math.ceil(min);
         const maxFloored: number = Math.floor(max);
 
@@ -137,4 +150,45 @@ export class Game extends Scene
         const mask: Display.Masks.BitmapMask = new Phaser.Display.Masks.BitmapMask(this, maskRect);
         container.setMask(mask);
     }
+
+    createTween(target: GameObjects.Image[]) {
+        const tween: Tweens.Tween = this.tweens.add({
+            targets: target,
+            y: '+=200',
+            duration: 1000,
+            ease: 'linear',
+            // paused: false,
+            // yoyo: true,
+            // repeat: -1,
+            // delay: this.tweens.stagger(100, {}),
+            onComplete: () => {
+                this.changeElements(target);
+                this.createTween(target);
+            }
+        });
+
+        return tween;
+    }
+
+    changeElements(array: GameObjects.Image[]) {
+        array[array.length - 1].y = array[0].y - Math.abs(initPositionY);
+        const lastElement: GameObjects.Image = array[array.length - 1];
+        for (let i: number = array.length - 1; i >= 0; i--) {
+            if (i === 0) {
+                array[i] = lastElement;
+            } else {
+                array[i] = array[i - 1];
+            }
+        }
+    }
+
+    // stopSpin(tween: Tweens.Tween) {
+    //     // console.log(tweenArray);
+    //     if (tween.isPlaying() === true) {
+    //         console.log('Is playing');
+    //         this.time.delayedCall(2000, () => {
+    //             tween.pause();
+    //         }, [], this);
+    //     }
+    // }
 }
