@@ -27,6 +27,7 @@ export class Game extends Scene
     reels: ESymbols[][];
     reelsContainer: GameObjects.Container;
     isReelsTimeOut: boolean[] = new Array(reelsNumber);
+    isSpinning: boolean = false;
 
     constructor ()
     {
@@ -64,7 +65,10 @@ export class Game extends Scene
         this.createReelsMask(this.reelsContainer, newReels);
 
         this.spinButton.on('pointerdown', () => {
-            this.startSpin(newReels);
+            if (this.isSpinning === false) {
+                this.isSpinning = true;
+                this.startSpin(newReels);
+            }
         });
     }
 
@@ -154,9 +158,13 @@ export class Game extends Scene
             duration: 100,
             ease: 'linear',
             onComplete: () => {
+                this.changeElements(target);
                 if (this.isReelsTimeOut[index] === false) {
-                    this.changeElements(target);
                     this.createTween(target, index);
+                } else {
+                    if (index === this.isReelsTimeOut.length - 1) {
+                        this.isSpinning = false;
+                    }
                 }
             }
         });
