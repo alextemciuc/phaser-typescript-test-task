@@ -26,6 +26,7 @@ export class Game extends Scene
     spinButton: GameObjects.Image;
     reels: ESymbols[][];
     reelsContainer: GameObjects.Container;
+    isReelsTimeOut: boolean[] = new Array(reelsNumber);
 
     constructor ()
     {
@@ -43,6 +44,7 @@ export class Game extends Scene
 
     create ()
     {
+        this.reelsContainer = this.add.container();
         this.background = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'background');
         this.background.setScale(0.5);
 
@@ -58,23 +60,24 @@ export class Game extends Scene
 
         this.reels = this.createReels();
         const newReels: GameObjects.Image[][] = this.addSymbols(this.reels);
-        console.log(newReels);
-
-        this.reelsContainer = this.add.container();
 
         this.createReelsMask(this.reelsContainer, newReels);
+
+        this.spinButton.on('pointerdown', () => {
+            this.startSpin(newReels);
+        });
     }
 
     createReels() {
         const reels: ESymbols[][] = new Array(reelsNumber)
         for (let i: number = 0; i < reels.length; i++) {
-            const reelDimension: number = this.getRandomReelDimension(minReelElements, maxReelElements);
+            const reelDimension: number = this.getRandomNumberBetween(minReelElements, maxReelElements);
             reels[i] = new Array(reelDimension);
         }
 
         for (let i: number = 0; i < reels.length; i++) {
             for (let j: number = 0; j < reels[i].length; j++) {
-                const randomInt = this.getRandomSymbolNumber(maxSymbols);
+                const randomInt = this.getRandomNumber(maxSymbols);
                 switch (randomInt) {
                     case 0:
                         reels[i][j] = ESymbols.BANANA;
@@ -117,11 +120,17 @@ export class Game extends Scene
         return newReels;
     }
 
-    getRandomSymbolNumber(max: number) {
+    initReelsTimeOut() {
+        for (let i: number = 0; i < this.isReelsTimeOut.length; i++) {
+            this.isReelsTimeOut[i] = false;
+        }
+    }
+
+    getRandomNumber(max: number) {
         return Math.floor(Math.random() * max);
     }
 
-    getRandomReelDimension(min: number, max: number) {
+    getRandomNumberBetween(min: number, max: number) {
         const minCeiled: number = Math.ceil(min);
         const maxFloored: number = Math.floor(max);
 
@@ -136,5 +145,44 @@ export class Game extends Scene
         const maskRect: GameObjects.Rectangle = this.add.rectangle(this.background.x, this.background.y - 10, 570, 240, 0x000000).setVisible(false);
         const mask: Display.Masks.BitmapMask = new Phaser.Display.Masks.BitmapMask(this, maskRect);
         container.setMask(mask);
+    }
+
+    createTween(target: GameObjects.Image[], index: number) {
+        this.tweens.add({
+            targets: target,
+            y: '+=200',
+            duration: 100,
+            ease: 'linear',
+            onComplete: () => {
+                if (this.isReelsTimeOut[index] === false) {
+                    this.changeElements(target);
+                    this.createTween(target, index);
+                }
+            }
+        });
+    }
+
+    changeElements(array: GameObjects.Image[]) {
+        array[array.length - 1].y = array[0].y - Math.abs(initPositionY);
+        const lastElement: GameObjects.Image = array[array.length - 1];
+        for (let i: number = array.length - 1; i >= 0; i--) {
+            if (i === 0) {
+                array[i] = lastElement;
+            } else {
+                array[i] = array[i - 1];
+            }
+        }
+    }
+
+    startSpin(reels: GameObjects.Image[][]) {
+        this.initReelsTimeOut();
+        for (let i: number = 0; i < reels.length; i++) {
+            this.time.delayedCall(i * 500, () => {
+                this.createTween(reels[i], i);
+                this.time.delayedCall(2000, () => {
+                    this.isReelsTimeOut[i] = true;
+                }, [], this);
+            }, [], this);
+        }
     }
 }
