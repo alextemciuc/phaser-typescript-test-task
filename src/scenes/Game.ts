@@ -12,6 +12,8 @@ const maxReelElements: number = 6;
 const reelsNumber: number = 3;
 const initPositionX: number = -200;
 const initPositionY: number = -200;
+const minSpinningTime: number = 1;
+const maxSpinningTime: number = 3;
 
 // const reels: ESymbols[][] = [
 //     [ESymbols.BANANA, ESymbols.BANANA, ESymbols.BLACKBERRY, ESymbols.CHERRY, ESymbols.CHERRY],
@@ -75,13 +77,13 @@ export class Game extends Scene
     createReels() {
         const reels: ESymbols[][] = new Array(reelsNumber)
         for (let i: number = 0; i < reels.length; i++) {
-            const reelDimension: number = this.getRandomNumberBetween(minReelElements, maxReelElements);
+            const reelDimension: number = this.getRandomIntNumberBetween(minReelElements, maxReelElements);
             reels[i] = new Array(reelDimension);
         }
 
         for (let i: number = 0; i < reels.length; i++) {
             for (let j: number = 0; j < reels[i].length; j++) {
-                const randomInt = this.getRandomNumber(maxSymbols);
+                const randomInt = this.getRandomIntNumber(maxSymbols);
                 switch (randomInt) {
                     case 0:
                         reels[i][j] = ESymbols.BANANA;
@@ -130,15 +132,19 @@ export class Game extends Scene
         }
     }
 
-    getRandomNumber(max: number) {
+    getRandomIntNumber(max: number) {
         return Math.floor(Math.random() * max);
     }
 
-    getRandomNumberBetween(min: number, max: number) {
+    getRandomIntNumberBetween(min: number, max: number) {
         const minCeiled: number = Math.ceil(min);
         const maxFloored: number = Math.floor(max);
 
         return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+    }
+
+    getRandomFloatBetween(min: number, max: number) {
+        return Math.random() * (max - min) + min;
     }
 
     createReelsMask(container: GameObjects.Container, reels: GameObjects.Image[][]) {
@@ -185,11 +191,21 @@ export class Game extends Scene
     startSpin(reels: GameObjects.Image[][]) {
         this.initReelsTimeOut();
         for (let i: number = 0; i < reels.length; i++) {
-            this.time.delayedCall(i * 500, () => {
+            this.time.delayedCall(i * 250, () => {
                 this.createTween(reels[i], i);
-                this.time.delayedCall(2000, () => {
-                    this.isReelsTimeOut[i] = true;
-                }, [], this);
+                if (i === reels.length - 1) {
+                    this.stopSpin();
+                }
+            }, [], this);
+        }
+    }
+
+    stopSpin() {
+        let randomMinTime: number = minSpinningTime;
+        for (let i: number = 0; i < reelsNumber; i++) {
+            randomMinTime = this.getRandomFloatBetween(randomMinTime, maxSpinningTime);
+            this.time.delayedCall(randomMinTime * 1000, () => {
+                this.isReelsTimeOut[i] = true;
             }, [], this);
         }
     }
