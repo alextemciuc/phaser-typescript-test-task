@@ -24,10 +24,8 @@ const maxSpinningTime: number = 3;
 export class Game extends Scene
 {
     background: GameObjects.Image;
-    // title: GameObjects.Text;
     winPopup: GameObjects.Image;
     spinButton: GameObjects.Image;
-    // reels: ESymbols[][];
     reels: GameObjects.Image[][];
     reelsContainer: GameObjects.Container;
     isReelsTimeOut: boolean[] = new Array(reelsNumber);
@@ -54,23 +52,15 @@ export class Game extends Scene
         this.background = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'background');
         this.background.setScale(0.5);
 
-        this.winPopup = this.add.image(this.cameras.main.width / 2, 215, 'win');
+        this.winPopup = this.add.image(this.background.x, this.background.y - 170, 'win');
         this.winPopup.setScale(0.5);
-        this.winPopup.setVisible(false);
+        this.winPopup.setVisible(true);
 
-        // this.title = this.add.text(512, 50, 'Game', {
-        //     fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-        //     stroke: '#000000', strokeThickness: 8,
-        //     align: 'center'
-        // }).setOrigin(0.5);
-
-        this.spinButton = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2 + 200, 'spinButton');
+        this.spinButton = this.add.image(this.background.x, this.background.y + 200, 'spinButton');
         this.spinButton.setScale(0.75);
         this.spinButton.setInteractive({ cursor: "pointer" });
 
-        // this.reels = this.createReels();
         const reelsString: ESymbols[][] = this.createReels();
-        // const newReels: GameObjects.Image[][] = this.addSymbols(reelsString);
         this.reels = this.addSymbols(reelsString);
 
         this.createReelsMask(this.reelsContainer);
@@ -117,13 +107,13 @@ export class Game extends Scene
                 let image: GameObjects.Image;
                 switch (symbol) {
                     case ESymbols.BANANA:
-                        image = this.add.image(this.cameras.main.width / 2 + positionX, this.cameras.main.height / 2 + positionY, symbol).setScale(0.5);
+                        image = this.add.image(this.background.x + positionX, this.background.y + positionY, symbol).setScale(0.5);
                         break;
                     case ESymbols.BLACKBERRY:
-                        image = this.add.image(this.cameras.main.width / 2 + positionX, this.cameras.main.height / 2 + positionY, symbol).setScale(0.5);
+                        image = this.add.image(this.background.x + positionX, this.background.y + positionY, symbol).setScale(0.5);
                         break;
                     case ESymbols.CHERRY:
-                        image = this.add.image(this.cameras.main.width / 2 + positionX, this.cameras.main.height / 2 + positionY, symbol).setScale(0.5);
+                        image = this.add.image(this.background.x + positionX, this.background.y + positionY, symbol).setScale(0.5);
                         break;
                 }
                 positionY += Math.abs(initPositionY);
@@ -183,10 +173,12 @@ export class Game extends Scene
                             this.time.delayedCall(2000, () => {
                                 this.winPopup.setVisible(false);
                                 this.spinButton.clearTint();
+                                this.spinButton.setInteractive();
                                 this.isSpinning = false;
                             }, [], this);
                         } else {
                             this.spinButton.clearTint();
+                            this.spinButton.setInteractive();
                             this.isSpinning = false;
                         }
                     }
@@ -209,6 +201,7 @@ export class Game extends Scene
 
     startSpin() {
         this.initReelsTimeOut();
+        this.spinButton.disableInteractive(true);
         this.spinButton.setTint(0xbdbcbc);
         for (let i: number = 0; i < this.reels.length; i++) {
             this.time.delayedCall(i * 250, () => {
@@ -235,7 +228,7 @@ export class Game extends Scene
         let isSlotWinning: boolean = true;
         for (let i: number = 0; i < this.reels.length; i++) {
             for (let j: number = 0; j < this.reels[i].length; j++) {
-                if (this.reels[i][j].y === this.cameras.main.height / 2) {
+                if (this.reels[i][j].y === this.background.y) {
                     winSlot[i] = this.reels[i][j].texture.key;
                 }
             }
