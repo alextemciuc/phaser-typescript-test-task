@@ -24,9 +24,11 @@ const maxSpinningTime: number = 3;
 export class Game extends Scene
 {
     background: GameObjects.Image;
-    title: GameObjects.Text;
+    // title: GameObjects.Text;
+    winPopup: GameObjects.Image;
     spinButton: GameObjects.Image;
-    reels: ESymbols[][];
+    // reels: ESymbols[][];
+    reels: GameObjects.Image[][];
     reelsContainer: GameObjects.Container;
     isReelsTimeOut: boolean[] = new Array(reelsNumber);
     isSpinning: boolean = false;
@@ -43,6 +45,7 @@ export class Game extends Scene
         this.load.image('blackberry', 'assets/Blackberry.png');
         this.load.image('cherry', 'assets/Cherry.png');
         this.load.image('spinButton', 'assets/Spin.png');
+        this.load.image('win', 'assets/Win.png');
     }
 
     create ()
@@ -51,25 +54,31 @@ export class Game extends Scene
         this.background = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2, 'background');
         this.background.setScale(0.5);
 
-        this.title = this.add.text(512, 50, 'Game', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
+        this.winPopup = this.add.image(this.cameras.main.width / 2, 215, 'win');
+        this.winPopup.setScale(0.5);
+        this.winPopup.setVisible(false);
+
+        // this.title = this.add.text(512, 50, 'Game', {
+        //     fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
+        //     stroke: '#000000', strokeThickness: 8,
+        //     align: 'center'
+        // }).setOrigin(0.5);
 
         this.spinButton = this.add.image(this.cameras.main.width / 2, this.cameras.main.height / 2 + 200, 'spinButton');
         this.spinButton.setScale(0.75);
         this.spinButton.setInteractive({ cursor: "pointer" });
 
-        this.reels = this.createReels();
-        const newReels: GameObjects.Image[][] = this.addSymbols(this.reels);
+        // this.reels = this.createReels();
+        const reelsString: ESymbols[][] = this.createReels();
+        // const newReels: GameObjects.Image[][] = this.addSymbols(reelsString);
+        this.reels = this.addSymbols(reelsString);
 
-        this.createReelsMask(this.reelsContainer, newReels);
+        this.createReelsMask(this.reelsContainer);
 
         this.spinButton.on('pointerdown', () => {
             if (this.isSpinning === false) {
                 this.isSpinning = true;
-                this.startSpin(newReels);
+                this.startSpin();
             }
         });
     }
@@ -147,9 +156,9 @@ export class Game extends Scene
         return Math.random() * (max - min) + min;
     }
 
-    createReelsMask(container: GameObjects.Container, reels: GameObjects.Image[][]) {
-        for (let i: number = 0; i < reels.length; i++) {
-            container.add(reels[i]);
+    createReelsMask(container: GameObjects.Container) {
+        for (let i: number = 0; i < this.reels.length; i++) {
+            container.add(this.reels[i]);
         }
 
         const maskRect: GameObjects.Rectangle = this.add.rectangle(this.background.x, this.background.y - 10, 570, 240, 0x000000).setVisible(false);
@@ -169,7 +178,17 @@ export class Game extends Scene
                     this.createTween(target, index);
                 } else {
                     if (index === this.isReelsTimeOut.length - 1) {
-                        this.isSpinning = false;
+                        if (this.isGameWon()) {
+                            this.winPopup.setVisible(true);
+                            this.time.delayedCall(2000, () => {
+                                this.winPopup.setVisible(false);
+                                this.spinButton.clearTint();
+                                this.isSpinning = false;
+                            }, [], this);
+                        } else {
+                            this.spinButton.clearTint();
+                            this.isSpinning = false;
+                        }
                     }
                 }
             }
@@ -188,12 +207,13 @@ export class Game extends Scene
         }
     }
 
-    startSpin(reels: GameObjects.Image[][]) {
+    startSpin() {
         this.initReelsTimeOut();
-        for (let i: number = 0; i < reels.length; i++) {
+        this.spinButton.setTint(0xbdbcbc);
+        for (let i: number = 0; i < this.reels.length; i++) {
             this.time.delayedCall(i * 250, () => {
-                this.createTween(reels[i], i);
-                if (i === reels.length - 1) {
+                this.createTween(this.reels[i], i);
+                if (i === this.reels.length - 1) {
                     this.stopSpin();
                 }
             }, [], this);
@@ -208,5 +228,22 @@ export class Game extends Scene
                 this.isReelsTimeOut[i] = true;
             }, [], this);
         }
+    }
+
+    isGameWon() {
+        let winSlot: String[] = new Array(this.reels.length);
+        let isSlotWinning: boolean = true;
+        for (let i: number = 0; i < this.reels.length; i++) {
+            for (let j: number = 0; j < this.reels[i].length; j++) {
+                if (this.reels[i][j].y === this.cameras.main.height / 2) {
+                    winSlot[i] = this.reels[i][j].texture.key;
+                }
+            }
+        }
+        for (let i: number = 1; i < winSlot.length; i++) {
+            isSlotWinning = isSlotWinning && winSlot[i-1] === winSlot[i];
+        }
+
+        return isSlotWinning;
     }
 }
