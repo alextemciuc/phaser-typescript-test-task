@@ -54,7 +54,7 @@ export class Game extends Scene
 
         this.winPopup = this.add.image(this.background.x, this.background.y - 170, 'win');
         this.winPopup.setScale(0.5);
-        this.winPopup.setVisible(true);
+        this.winPopup.setVisible(false);
 
         this.spinButton = this.add.image(this.background.x, this.background.y + 200, 'spinButton');
         this.spinButton.setScale(0.75);
